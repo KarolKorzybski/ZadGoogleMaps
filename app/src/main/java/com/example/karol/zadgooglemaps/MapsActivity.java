@@ -99,6 +99,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     double base_lat = 0;
     double base_lng = 0;
     double dystans = 0;
+    Intent i = new Intent(getApplicationContext(), MyService.class);
     public static final int REQUEST_ID_ACCESS_COURSE_FINE_LOCATION = 100;
     LocationManager locationManager;
 
@@ -379,7 +380,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 if (!running) {
-                    Intent i = new Intent(getApplicationContext(), MyService.class);
+                    Log.d("start","Start");
                     startService(i);
                     timestamp = System.currentTimeMillis();
 
@@ -398,7 +399,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 running = false;
-                Intent i = new Intent(getApplicationContext(), MyService.class);
+                Log.d("stop","stop");
                 stopService(i);
 
             }
@@ -432,21 +433,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return false;
     }
 
-    private PowerManager mPowerManager;
-    private PowerManager.WakeLock mWakeLock;
 
-
-    private void turnOnScreen() {
-        PowerManager.WakeLock screenLock = null;
-        if ((getSystemService(POWER_SERVICE)) != null) {
-            screenLock = ((PowerManager)getSystemService(POWER_SERVICE)).newWakeLock(
-                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "TAG");
-            screenLock.acquire(10*60*1000L /*10 minutes*/);
-
-
-            screenLock.release();
-        }
-    }
     public void runTimer() {
         //      createLocationRequest();
 

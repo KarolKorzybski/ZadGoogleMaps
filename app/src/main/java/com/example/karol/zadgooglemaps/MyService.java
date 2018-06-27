@@ -35,8 +35,8 @@ import com.google.android.gms.location.LocationServices;
 public class MyService extends Service implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
-    double lat1=0;
-    double lng1=0;
+    double lat1 = 0;
+    double lng1 = 0;
     private static final String TAG = MyService.class.getSimpleName();
     GoogleApiClient mLocationClient;
     LocationRequest mLocationRequest = new LocationRequest();
@@ -85,42 +85,43 @@ public class MyService extends Service implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        running = true;
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        if (!running) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
 
-           // Log.d(TAG, "== Error On onConnected() Permission not granted");
-            //Permission not granted by user so cancel the further execution.
+                // Log.d(TAG, "== Error On onConnected() Permission not granted");
+                //Permission not granted by user so cancel the further execution.
 
-            return;
-        }
-
-
-        Intent intent = new Intent(this, MyService.class);
-        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        try {
-            LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
-        } catch (IllegalStateException e) {
-           // Log.d("illegal", "illegal");
-        }
-
-        //Log.d(TAG, "Connected to Google API");
-
-
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
+                return;
             }
-        }, 900);
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
-        onLocationChanged(mLastLocation);
+
+
+            Intent intent = new Intent(this, MyService.class);
+            PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            try {
+                LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
+            } catch (IllegalStateException e) {
+                // Log.d("illegal", "illegal");
+            }
+
+            //Log.d(TAG, "Connected to Google API");
+
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                }
+            }, 900);
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
+            onLocationChanged(mLastLocation);
+        }
     }
 
     /*
@@ -129,7 +130,7 @@ public class MyService extends Service implements
      */
     @Override
     public void onConnectionSuspended(int i) {
-       // Log.d(TAG, "Connection suspended");
+        // Log.d(TAG, "Connection suspended");
     }
 
 
@@ -138,20 +139,19 @@ public class MyService extends Service implements
     public void onLocationChanged(Location location) {
         //Log.d(TAG, "Location changed");
         try {
-           // Log.d("lat", String.valueOf(location.getLatitude()));
-          //  Log.d("long", String.valueOf(location.getLongitude()));
+            // Log.d("lat", String.valueOf(location.getLatitude()));
+            //  Log.d("long", String.valueOf(location.getLongitude()));
 
-        }catch (NullPointerException e)
-        {
-          //  Log.d("NullPointerException", String.valueOf(e));
+        } catch (NullPointerException e) {
+            //  Log.d("NullPointerException", String.valueOf(e));
         }
         if (location != null) {
-           // Log.d(TAG, "== location != null");
+            // Log.d(TAG, "== location != null");
 
             //Send result to activities
             sendMessageToUI(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
-           // Log.d("lat", String.valueOf(location.getLatitude()));
-          //  Log.d("long", String.valueOf(location.getLongitude()));
+            // Log.d("lat", String.valueOf(location.getLatitude()));
+            //  Log.d("long", String.valueOf(location.getLongitude()));
         }
 
     }
@@ -174,12 +174,11 @@ public class MyService extends Service implements
 
     private void sendMessageToUI(String lat, String lng) {
 
-       // Log.d(TAG, "Sending info...");
+        // Log.d(TAG, "Sending info...");
 
         //Intent intent = new Intent(ACTION_LOCATION_BROADCAST);
         final Intent intent = new Intent("location_update");
-        if(lat1 != Double.parseDouble(lat) || lng1 != Double.parseDouble(lng))
-        {
+        if (lat1 != Double.parseDouble(lat) || lng1 != Double.parseDouble(lng)) {
             intent.putExtra("Lat", lat);
             intent.putExtra("Long", lng);
             Log.d("lat", lat);
@@ -197,8 +196,18 @@ public class MyService extends Service implements
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-       // Log.d(TAG, "Failed to connect to Google API");
+        // Log.d(TAG, "Failed to connect to Google API");
 
     }
 
+    public void onDestroy() {
+        super.onDestroy();
+
+
+        running = true;
+        mLocationClient.disconnect();
+        Log.e("destroy", "!null");
+
+    }
 }
+
