@@ -48,12 +48,15 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+    long timestamp;
+    long timestamp2;
     public BroadcastReceiver broadcastReceiver;
     boolean zmienna = false;
     Marker currentMarker2;
@@ -378,12 +381,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (!running) {
                     Intent i = new Intent(getApplicationContext(), MyService.class);
                     startService(i);
+                    timestamp = System.currentTimeMillis();
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(i);
-                    } else {
-                        startService(i);
-                    }
                     myMap.clear();
                     dystans = 0.0;
                     // Empty the array list
@@ -462,15 +461,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 minutes = (seconds % 3600) / 60;
                 secs = seconds % 60;
                 time = String.format("%02d:%02d:%02d", hours, minutes, secs);
+                Log.d("running", String.valueOf(running));
                 timeView.setText(time);
                 if (running) {
-                    ++seconds;
+                    //++seconds;
+                    timestamp2 = System.currentTimeMillis();
+                    seconds = (int)((timestamp2 - timestamp) / 1000);
 
                     //Log.d("seconds", String.valueOf(seconds));
                     //Log.d("time", String.valueOf(time));
 
 
-                    //Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
+                    Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
 
                     try {
                         //Log.d("Work!", "Work!");
@@ -609,7 +611,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
 
                 }
-                handler.postDelayed(this, 1000);
+                handler.postDelayed(this, 900);
             }
         });
     }
