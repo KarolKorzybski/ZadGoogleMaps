@@ -138,6 +138,7 @@ public class MyService extends Service implements
         try {
             Log.d("lat", String.valueOf(location.getLatitude()));
             Log.d("long", String.valueOf(location.getLongitude()));
+
         }catch (NullPointerException e)
         {
             Log.d("NullPointerException", String.valueOf(e));
@@ -174,6 +175,10 @@ public class MyService extends Service implements
         Log.d(TAG, "Sending info...");
 
         Intent intent = new Intent(ACTION_LOCATION_BROADCAST);
+
+        intent.putExtra("Lat", lat);
+        intent.putExtra("Long", lng);
+        sendBroadcast(intent);
         intent.putExtra(EXTRA_LATITUDE, lat);
         intent.putExtra(EXTRA_LONGITUDE, lng);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
