@@ -18,6 +18,9 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -55,10 +58,9 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
-    Intent i;
-    boolean destroy = false;
     long timestamp;
     long timestamp2;
+    boolean alarm = false;
     public BroadcastReceiver broadcastReceiver;
     boolean zmienna = false;
     Marker currentMarker2;
@@ -95,15 +97,74 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean wasRunning;
     private int seconds = 0;
     static final private int ALERT_GPS = 1;
+    static final private int ALERT_NETWORK = 2;
     private GoogleMap myMap;
     private ProgressDialog myProgress;
     TextView odleglosc;
     double base_lat = 0;
     double base_lng = 0;
     double dystans = 0;
-
+    boolean connected;
     public static final int REQUEST_ID_ACCESS_COURSE_FINE_LOCATION = 100;
     LocationManager locationManager;
+
+    public void onResume() {
+        super.onResume();
+        if (broadcastReceiver == null) {
+            broadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    try {
+                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
+                        //Log.d("Long", "" + intent.getExtras().get("Long"));
+                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
+                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
+                        //Log.d("Przerwa", "przerwa");
+                        //Log.d("Lat", "" + Lat);
+                        //Log.d("Lat", "" + Long);
+                        //i.putExtra("Long",location.getLongitude());
+                        //textView.append("\n" +intent.getExtras().get("coordinates"));
+                        //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
+                    } catch (NullPointerException e) {
+                        //Log.e("NullPointerException ", String.valueOf(e));
+                    } catch (NumberFormatException e) {
+                        //Log.e("NullPointerException ", String.valueOf(e));
+                    }
+                }
+            };
+        }
+        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
+    }
+
+    public void onStop() {
+        super.onStop();
+
+
+        if (broadcastReceiver == null) {
+            broadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    try {
+
+                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
+                        //Log.d("Long", "" + intent.getExtras().get("Long"));
+                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
+                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
+                        //Log.d("Przerwa", "przerwa");
+                        //Log.d("Lat", "" + Lat);
+                        //Log.d("Lat", "" + Long);
+                        //i.putExtra("Long",location.getLongitude());
+                        //textView.append("\n" +intent.getExtras().get("coordinates"));
+                        //Log.d("coordinates", "" + intent.getExtras().get("coordinates"));
+                    } catch (NullPointerException e) {
+                        //Log.e("NullPointerException ", String.valueOf(e));
+                    }
+                }
+            };
+        }
+        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
+
+    }
 
 
     @Override
@@ -112,40 +173,51 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
         ButterKnife.bind(this);
         odleglosc = (TextView) findViewById(R.id.textView);
+        ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        if(connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
+                connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        //you will call this activity later
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-/*            showDialog(ALERT_DIALOG_BUTTONS);
-            stan=true;
-            textView.setText("if");*/
-            showDialog(ALERT_GPS);
+            connected = true;
+        }
+        else
+            connected = false;
+        if(!connected)
+        {
+            connected = true;
+            odleglosc.setText("Network disable - please turn on");
 
         }
-        myProgress = new ProgressDialog(this);
-        myProgress.setTitle("Map Loading ...");
-        myProgress.setMessage("Please wait...");
-        myProgress.setCancelable(true);
-        // Display Progress Bar.
-        myProgress.show();
+        if(connected)
+        {
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            //you will call this activity later
+
+            myProgress = new ProgressDialog(this);
+            myProgress.setTitle("Map Loading ...");
+            myProgress.setMessage("Please wait...");
+            myProgress.setCancelable(true);
+            // Display Progress Bar.
+            myProgress.show();
 
 
-        SupportMapFragment mapFragment
-                = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+            SupportMapFragment mapFragment
+                    = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
 
-        // Set callback listener, on Google Map ready.
-        mapFragment.getMapAsync(new OnMapReadyCallback() {
+            // Set callback listener, on Google Map ready.
+            mapFragment.getMapAsync(new OnMapReadyCallback() {
 
-            @Override
-            public void onMapReady(GoogleMap googleMap) {
-                onMyMapReady(googleMap);
-            }
-        });
+                @Override
+                public void onMapReady(GoogleMap googleMap) {
+                    onMyMapReady(googleMap);
+                }
+            });
+            if (!runtime_permissions())
+                enable_buttons();
+        }
 
-        if (!runtime_permissions())
-            enable_buttons();
 
     }
+
 
     private void onMyMapReady(GoogleMap googleMap) {
         // Get Google Map from Fragment.
@@ -201,10 +273,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+
+        Log.e("destroy","destroy");
         if (broadcastReceiver != null) {
             unregisterReceiver(broadcastReceiver);
         }
+        Intent intent = new Intent("android.location.GPS_ENABLED_CHANGE");
+        intent.putExtra("enabled", false);
+        sendBroadcast(intent);
+        super.onDestroy();
     }
 
     @Override
@@ -257,9 +334,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d("start", "start");
                 if (!running) {
-                    Log.d("start", "Start");
-                    i = new Intent(MapsActivity.this, MyService.class);
+                    if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        alarm = true;
+                        if(alarm)
+                            showDialog(ALERT_GPS);
+
+                    }
+                    Intent i = new Intent(getApplicationContext(), MyService.class);
                     startService(i);
                     timestamp = System.currentTimeMillis();
 
@@ -270,7 +353,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     seconds = 0;
                     stan = false;
                 }
-                destroy = false;
                 running = true;
             }
         });
@@ -279,8 +361,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 running = false;
-                Log.d("stop", "stop");
-                i = new Intent(MapsActivity.this, MyService.class);
+                Intent i = new Intent(getApplicationContext(), MyService.class);
                 stopService(i);
 
             }
@@ -314,6 +395,76 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return false;
     }
 
+    private PowerManager mPowerManager;
+    private PowerManager.WakeLock mWakeLock;
+    protected Dialog onCreateDialog(int id) {
+        switch (id) {
+
+            case ALERT_GPS:
+                return createAlertDialogGps();
+            case ALERT_NETWORK:
+                return createAlertDialogNetwork();
+            default:
+                return null;
+
+        }
+    }
+
+    private Dialog createAlertDialogGps() {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle("GPS disable");
+        dialogBuilder.setMessage("Turn on?");
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setPositiveButton("Yes", new Dialog.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int whichButton) {
+
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+        });
+        dialogBuilder.setNegativeButton("No", new Dialog.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int whichButton) {
+                //showToast("You picked negative button");
+            }
+        });
+        return dialogBuilder.create();
+    }
+
+    private Dialog createAlertDialogNetwork() {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle("Connection network disable");
+        dialogBuilder.setMessage("Turn on?");
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setPositiveButton("Yes", new Dialog.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int whichButton) {
+
+                Intent intent = new Intent(Settings.ACTION_SETTINGS);
+                startActivity(intent);
+            }
+        });
+        dialogBuilder.setNegativeButton("No", new Dialog.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int whichButton) {
+                //showToast("You picked negative button");
+            }
+        });
+        return dialogBuilder.create();
+    }
+
+    private void turnOnScreen() {
+        PowerManager.WakeLock screenLock = null;
+        if ((getSystemService(POWER_SERVICE)) != null) {
+            screenLock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "TAG");
+            screenLock.acquire(10 * 60 * 1000L /*10 minutes*/);
+
+
+            screenLock.release();
+        }
+    }
 
     public void runTimer() {
         //      createLocationRequest();
@@ -329,7 +480,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 minutes = (seconds % 3600) / 60;
                 secs = seconds % 60;
                 time = String.format("%02d:%02d:%02d", hours, minutes, secs);
-                //Log.d("running", String.valueOf(running));
+                Log.d("running", String.valueOf(running));
                 timeView.setText(time);
                 if (running) {
                     //++seconds;
@@ -337,46 +488,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     seconds = (int) ((timestamp2 - timestamp) / 1000);
 
                     //Log.d("seconds", String.valueOf(seconds));
-                    Log.d("time", String.valueOf(time));
+                    //Log.d("time", String.valueOf(time));
 
 
-                    // Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
+                    Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
 
                     try {
                         //Log.d("Work!", "Work!");
-                        if (!destroy) {
-                            if (broadcastReceiver == null) {
-                                broadcastReceiver = new BroadcastReceiver() {
-                                    @Override
-                                    public void onReceive(Context context, Intent intent) {
-                                        try {
-                                            //Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                                            //Log.d("Long", "" + intent.getExtras().get("Long"));
 
-                                            Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
-                                            Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                                            destroy = Boolean.getBoolean("" + intent.getExtras().get("destroy"));
-                                            //Log.d("Przerwa", "przerwa");
-                                            //Log.d("Lat", "" + Lat);
-                                            //Log.d("Lat", "" + Long);
-                                            //i.putExtra("Long",location.getLongitude());
-                                            //textView.append("\n" +intent.getExtras().get("coordinates"));
-                                            //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
-                                        } catch (NullPointerException e) {
-                                            //Log.e("NullPointerException ", String.valueOf(e));
-                                        }catch (NumberFormatException e) {
-                                            //Log.e("NullPointerException ", String.valueOf(e));
-                                        }
-                                    }
-                                };
-                            }
-                            registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
-                        }
-                        else
-                        {
-                            i = new Intent(MapsActivity.this, MyService.class);
-                            stopService(i);
-                        }
                         latLng = new LatLng(Lat, Long);
                         if (!stan & Lat != 0 & Long != 0) {
                             //if (!stan) {
@@ -402,7 +521,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 liczba = distFrom(v, v1, Lat, Long);
 
 
-                                Log.d("liczba", String.valueOf(liczba + "m"));
+//                                Log.d("liczba", String.valueOf(liczba + "m"));
+//                                Log.d("v", String.valueOf(v));
+//                                Log.d("Lat", String.valueOf(Lat));
+//                                Log.d("v1", String.valueOf(v1));
+//                                Log.d("Long", String.valueOf(Long));
                             }
                             x = formatter.format(liczba);
                             if (!(v == 0.0 & v1 == 0.0)) {
@@ -422,11 +545,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 option.title("START");
                                 currentMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ico));
                                 currentMarker.showInfoWindow();
-                                //Log.d("MYTAG", "I'm here");
-/*                                    Log.d("v", String.valueOf(v));
-                                    Log.d("Lat", String.valueOf(Lat));
-                                    Log.d("v1", String.valueOf(v1));
-                                    Log.d("Long", String.valueOf(Long));*/
                                 v = Lat;
                                 v1 = Long;
                                 polylineOptions = new PolylineOptions();
@@ -452,7 +570,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 currentMarker.showInfoWindow();
 
                             }
+                        } else {
+                            turnOnScreen();
+
                         }
+
                     } catch (NullPointerException e) {
                         textView.setText("Check GPS, click again and wait...");
                         //Log.e("MYTAG", "Check GPS, click again and wait...");

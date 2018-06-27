@@ -43,35 +43,48 @@ public class MyService extends Service implements
     public LocationListener listener;
     public LocationManager locationManager;
     PendingIntent pendingIntent;
-
+    int priority;
     public static final String ACTION_LOCATION_BROADCAST = MyService.class.getName() + "LocationBroadcast";
     public static final String EXTRA_LATITUDE = "extra_latitude";
     public static final String EXTRA_LONGITUDE = "extra_longitude";
-    boolean stan;
+    boolean stan = false;
     Location mLastLocation;
+
+    public void onCreate() {
+        super.onCreate();
+
+        final Handler handler = new Handler();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (!stan) {
+                    mLocationClient = new GoogleApiClient.Builder(MyService.this)
+                            .addConnectionCallbacks(MyService.this)
+                            .addOnConnectionFailedListener(MyService.this)
+                            .addApi(LocationServices.API)
+                            .build();
+                    mLocationRequest.setInterval(1000);
+                    mLocationRequest.setFastestInterval(1000);
+
+
+                    priority = LocationRequest.PRIORITY_HIGH_ACCURACY; //by default
+                    //PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER, PRIORITY_NO_POWER are the other priority modes
+
+
+                    mLocationRequest.setPriority(priority);
+                    mLocationClient.connect();
+                }
+                handler.postDelayed(this, 250);
+            }
+        });
+        //Make it stick to the notification panel so it is less prone to get cancelled by the Operating System.
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-
-        mLocationClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mLocationRequest.setInterval(1000);
-        mLocationRequest.setFastestInterval(1000);
-
-
-        int priority = LocationRequest.PRIORITY_HIGH_ACCURACY; //by default
-        //PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER, PRIORITY_NO_POWER are the other priority modes
-
-
-        mLocationRequest.setPriority(priority);
-        mLocationClient.connect();
-
-        //Make it stick to the notification panel so it is less prone to get cancelled by the Operating System.
         return START_STICKY;
+
     }
 
     @Nullable
@@ -85,39 +98,38 @@ public class MyService extends Service implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        if (!stan) {
-            Log.d("stan = ", String.valueOf(stan));
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
 
-                // Log.d(TAG, "== Error On onConnected() Permission not granted");
-                //Permission not granted by user so cancel the further execution.
+        //Log.d("stan = ", String.valueOf(stan));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
 
-                return;
-            }
+            // Log.d(TAG, "== Error On onConnected() Permission not granted");
+            //Permission not granted by user so cancel the further execution.
 
-
-            Intent intent = new Intent(this, MyService.class);
-            pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            try {
-                LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
-            } catch (IllegalStateException e) {
-                // Log.d("illegal", "illegal");
-            }
-
-            //Log.d(TAG, "Connected to Google API");
-
-
-
-            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
-            onLocationChanged(mLastLocation);
+            return;
         }
+
+
+        Intent intent = new Intent(this, MyService.class);
+        pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        try {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
+        } catch (IllegalStateException e) {
+            // Log.d("illegal", "illegal");
+        }
+
+        //Log.d(TAG, "Connected to Google API");
+
+
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
+        onLocationChanged(mLastLocation);
+
     }
 
     /*
@@ -199,9 +211,12 @@ public class MyService extends Service implements
     public void onDestroy() {
         super.onDestroy();
         final Intent intent = new Intent("location_update");
-            intent.putExtra("destroy", "true");
-            sendBroadcast(intent);
+        intent.putExtra("destroy", "true");
+        sendBroadcast(intent);
         pendingIntent = null;
+        priority = 0;
+        mLocationRequest = null;
+
         stan = true;
         mLocationClient.disconnect();
         Log.e("destroy", "!null");
