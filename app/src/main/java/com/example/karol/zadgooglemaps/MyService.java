@@ -24,7 +24,6 @@ public class MyService extends Service {
     private Toast toast;
     private Timer timer;
     private TimerTask timerTask;
-    boolean running = false;
     private class MyTimerTask extends TimerTask {
         @Override
         public void run() {
@@ -47,7 +46,7 @@ public class MyService extends Service {
     public void onCreate() {
         timer = new Timer();
         toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
-        running = true;
+        zzz
 
     }
 
@@ -61,9 +60,8 @@ public class MyService extends Service {
             @Override
             public void run() {
                 if (running) {
-                    Log.d("tutaj1","tutaj");
                     LocationListener listener = new LocationListener() {
-
+                        @Override
                         public void onLocationChanged(Location location) {
 
                             i.putExtra("Lat", location.getLatitude());
@@ -81,17 +79,16 @@ public class MyService extends Service {
 
                         @Override
                         public void onStatusChanged(String s, int i, Bundle bundle) {
-                            Log.d("tutaj2","tutaj");
+
                         }
 
                         @Override
                         public void onProviderEnabled(String s) {
-                            Log.d("tutaj3","tutaj");
+
                         }
 
                         @Override
                         public void onProviderDisabled(String s) {
-                            Log.d("tutaj4","tutaj");
                             Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(i);
@@ -100,7 +97,7 @@ public class MyService extends Service {
                     };
 
                     LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-                    Log.d("tutaj5","tutaj");
+
                     //noinspection MissingPermission
                     if (ActivityCompat.checkSelfPermission(MyService.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MyService.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         // TODO: Consider calling
@@ -113,6 +110,8 @@ public class MyService extends Service {
                        // return super.onStartCommand(intent, flags, startId);
                     }
                     locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 900, 0, listener);
+                    timer.scheduleAtFixedRate(timerTask, 4 * 1000, 4 * 1000);
+
                 }handler.postDelayed(this,1000);
             }
         });
