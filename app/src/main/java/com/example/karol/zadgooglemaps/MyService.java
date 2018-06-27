@@ -85,8 +85,8 @@ public class MyService extends Service {
         if(locationManager != null){
             //noinspection MissingPermission
             locationManager.removeUpdates(listener);
-            Log.e("destroy","!null");
+            //Log.e("destroy","!null");
         }
-        Log.e("destroy","null");
+        //Log.e("destroy","null");
     }
 }

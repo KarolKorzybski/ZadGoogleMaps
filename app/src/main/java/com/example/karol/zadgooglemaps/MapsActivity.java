@@ -106,18 +106,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     try {
-                        Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                        Log.d("Long", "" + intent.getExtras().get("Long"));
+                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
+                        //Log.d("Long", "" + intent.getExtras().get("Long"));
                         Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
                         Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                        Log.d("Przerwa", "przerwa");
-                        Log.d("Lat", "" + Lat);
-                        Log.d("Lat", "" + Long);
+                        //Log.d("Przerwa", "przerwa");
+                        //Log.d("Lat", "" + Lat);
+                        //Log.d("Lat", "" + Long);
                         //i.putExtra("Long",location.getLongitude());
                         //textView.append("\n" +intent.getExtras().get("coordinates"));
                         //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
                     } catch (NullPointerException e) {
-                        Log.e("NullPointerException ", String.valueOf(e));
+                        //Log.e("NullPointerException ", String.valueOf(e));
                     }
                 }
             };
@@ -135,18 +135,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 public void onReceive(Context context, Intent intent) {
                     try {
 
-                        Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                        Log.d("Long", "" + intent.getExtras().get("Long"));
+                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
+                        //Log.d("Long", "" + intent.getExtras().get("Long"));
                         Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
                         Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                        Log.d("Przerwa", "przerwa");
-                        Log.d("Lat", "" + Lat);
-                        Log.d("Lat", "" + Long);
+                        //Log.d("Przerwa", "przerwa");
+                        //Log.d("Lat", "" + Lat);
+                        //Log.d("Lat", "" + Long);
                         //i.putExtra("Long",location.getLongitude());
                         //textView.append("\n" +intent.getExtras().get("coordinates"));
-                        Log.d("coordinates", "" + intent.getExtras().get("coordinates"));
+                        //Log.d("coordinates", "" + intent.getExtras().get("coordinates"));
                     } catch (NullPointerException e) {
-                        Log.e("NullPointerException ", String.valueOf(e));
+                        //Log.e("NullPointerException ", String.valueOf(e));
                     }
                 }
             };
@@ -466,13 +466,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (running) {
                     ++seconds;
 
-                    Log.d("seconds", String.valueOf(seconds));
+                    //Log.d("seconds", String.valueOf(seconds));
+                    //Log.d("time", String.valueOf(time));
 
 
-                    Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
+                    //Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
 
                     try {
-                        Log.d("Work!", "Work!");
+                        //Log.d("Work!", "Work!");
 
                         latLng = new LatLng(Lat, Long);
                         if (!stan & Lat != 0 & Long != 0) {
@@ -499,11 +500,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 liczba = distFrom(v, v1, Lat, Long);
 
 
-                                Log.d("liczba", String.valueOf(liczba + "m"));
-                                Log.d("v", String.valueOf(v));
-                                Log.d("Lat", String.valueOf(Lat));
-                                Log.d("v1", String.valueOf(v1));
-                                Log.d("Long", String.valueOf(Long));
+//                                Log.d("liczba", String.valueOf(liczba + "m"));
+//                                Log.d("v", String.valueOf(v));
+//                                Log.d("Lat", String.valueOf(Lat));
+//                                Log.d("v1", String.valueOf(v1));
+//                                Log.d("Long", String.valueOf(Long));
                             }
                             x = formatter.format(liczba);
                             if (!(v == 0.0 & v1 == 0.0)) {
@@ -523,7 +524,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 option.title("START");
                                 currentMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ico));
                                 currentMarker.showInfoWindow();
-                                Log.d("MYTAG", "I'm here");
+                                //Log.d("MYTAG", "I'm here");
 /*                                    Log.d("v", String.valueOf(v));
                                     Log.d("Lat", String.valueOf(Lat));
                                     Log.d("v1", String.valueOf(v1));
@@ -555,7 +556,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             }
                         } else {
                             turnOnScreen();
-                            Log.e("turnOnScreen","turnOnScreen");
+                            //Log.e("turnOnScreen","turnOnScreen");
 /*                            Log.d("v", String.valueOf(v));
                             Log.d("Lat", String.valueOf(Lat));
                             Log.d("v1", String.valueOf(v1));
@@ -587,7 +588,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 licznik=0;
                             }
                             Log.d("service3", String.valueOf(isMyServiceRunning(MyService.class)));*/
-                            Log.d("Not location!", "Not location!");
+                            //.d("Not location!", "Not location!");
                             //textView.setText("identical\nTotal distance = " + formatter.format(dystans) + "m");
                             //askPermissionsAndShowMyLocation();
 /*                            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
@@ -604,7 +605,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     } catch (NullPointerException e) {
                         textView.setText("Check GPS, click again and wait...");
-                        Log.e("MYTAG", "Check GPS, click again and wait...");
+                        //Log.e("MYTAG", "Check GPS, click again and wait...");
                     }
 
                 }
