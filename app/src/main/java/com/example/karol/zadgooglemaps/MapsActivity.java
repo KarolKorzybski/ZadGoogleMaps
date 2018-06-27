@@ -461,7 +461,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 minutes = (seconds % 3600) / 60;
                 secs = seconds % 60;
                 time = String.format("%02d:%02d:%02d", hours, minutes, secs);
-                Log.d("running", String.valueOf(running));
+                //Log.d("running", String.valueOf(running));
                 timeView.setText(time);
                 if (running) {
                     //++seconds;
@@ -469,10 +469,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     seconds = (int)((timestamp2 - timestamp) / 1000);
 
                     //Log.d("seconds", String.valueOf(seconds));
-                    //Log.d("time", String.valueOf(time));
+                    Log.d("time", String.valueOf(time));
 
 
-                    Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
+                   // Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
 
                     try {
                         //Log.d("Work!", "Work!");
@@ -502,7 +502,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 liczba = distFrom(v, v1, Lat, Long);
 
 
-//                                Log.d("liczba", String.valueOf(liczba + "m"));
+                                Log.d("liczba", String.valueOf(liczba + "m"));
 //                                Log.d("v", String.valueOf(v));
 //                                Log.d("Lat", String.valueOf(Lat));
 //                                Log.d("v1", String.valueOf(v1));
@@ -611,7 +611,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
 
                 }
-                handler.postDelayed(this, 90);
+                handler.postDelayed(this, 900);
             }
         });
     }
