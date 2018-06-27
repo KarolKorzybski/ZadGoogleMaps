@@ -42,12 +42,12 @@ public class MyService extends Service implements
     LocationRequest mLocationRequest = new LocationRequest();
     public LocationListener listener;
     public LocationManager locationManager;
-
+    PendingIntent pendingIntent;
 
     public static final String ACTION_LOCATION_BROADCAST = MyService.class.getName() + "LocationBroadcast";
     public static final String EXTRA_LATITUDE = "extra_latitude";
     public static final String EXTRA_LONGITUDE = "extra_longitude";
-    boolean running = false;
+    boolean stan;
     Location mLastLocation;
 
     @Override
@@ -85,7 +85,8 @@ public class MyService extends Service implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        if (!running) {
+        if (!stan) {
+            Log.d("stan = ", String.valueOf(stan));
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
@@ -103,7 +104,7 @@ public class MyService extends Service implements
 
 
             Intent intent = new Intent(this, MyService.class);
-            PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
             try {
                 LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
             } catch (IllegalStateException e) {
@@ -113,12 +114,7 @@ public class MyService extends Service implements
             //Log.d(TAG, "Connected to Google API");
 
 
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                }
-            }, 900);
+
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
             onLocationChanged(mLastLocation);
         }
@@ -202,9 +198,11 @@ public class MyService extends Service implements
 
     public void onDestroy() {
         super.onDestroy();
-
-
-        running = true;
+        final Intent intent = new Intent("location_update");
+            intent.putExtra("destroy", "true");
+            sendBroadcast(intent);
+        pendingIntent = null;
+        stan = true;
         mLocationClient.disconnect();
         Log.e("destroy", "!null");
 

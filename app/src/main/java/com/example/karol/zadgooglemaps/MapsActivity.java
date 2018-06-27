@@ -55,6 +55,8 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+    Intent i;
+    boolean destroy = false;
     long timestamp;
     long timestamp2;
     public BroadcastReceiver broadcastReceiver;
@@ -99,65 +101,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     double base_lat = 0;
     double base_lng = 0;
     double dystans = 0;
-    Intent i = new Intent(getApplicationContext(), MyService.class);
+
     public static final int REQUEST_ID_ACCESS_COURSE_FINE_LOCATION = 100;
     LocationManager locationManager;
-
-    public void onResume() {
-        super.onResume();
-        if (broadcastReceiver == null) {
-            broadcastReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    try {
-                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                        //Log.d("Long", "" + intent.getExtras().get("Long"));
-                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
-                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                        //Log.d("Przerwa", "przerwa");
-                        //Log.d("Lat", "" + Lat);
-                        //Log.d("Lat", "" + Long);
-                        //i.putExtra("Long",location.getLongitude());
-                        //textView.append("\n" +intent.getExtras().get("coordinates"));
-                        //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
-                    } catch (NullPointerException e) {
-                        //Log.e("NullPointerException ", String.valueOf(e));
-                    }
-                }
-            };
-        }
-        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
-    }
-
-    public void onStop() {
-        super.onStop();
-
-
-        if (broadcastReceiver == null) {
-            broadcastReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    try {
-
-                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                        //Log.d("Long", "" + intent.getExtras().get("Long"));
-                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
-                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                        //Log.d("Przerwa", "przerwa");
-                        //Log.d("Lat", "" + Lat);
-                        //Log.d("Lat", "" + Long);
-                        //i.putExtra("Long",location.getLongitude());
-                        //textView.append("\n" +intent.getExtras().get("coordinates"));
-                        //Log.d("coordinates", "" + intent.getExtras().get("coordinates"));
-                    } catch (NullPointerException e) {
-                        //Log.e("NullPointerException ", String.valueOf(e));
-                    }
-                }
-            };
-        }
-        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
-
-    }
 
 
     @Override
@@ -195,53 +141,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 onMyMapReady(googleMap);
             }
         });
+
         if (!runtime_permissions())
             enable_buttons();
 
-    }
-
-    private Dialog createAlertDialogNetwork() {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setTitle("Connection network disable");
-        dialogBuilder.setMessage("Turn on?");
-        dialogBuilder.setCancelable(false);
-        dialogBuilder.setPositiveButton("Yes", new Dialog.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int whichButton) {
-
-                Intent intent = new Intent(Settings.ACTION_SETTINGS);
-                startActivity(intent);
-            }
-        });
-        dialogBuilder.setNegativeButton("No", new Dialog.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int whichButton) {
-                //showToast("You picked negative button");
-            }
-        });
-        return dialogBuilder.create();
-    }
-
-    private Dialog createAlertDialogGps() {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setTitle("GPS disable");
-        dialogBuilder.setMessage("Turn on?");
-        dialogBuilder.setCancelable(false);
-        dialogBuilder.setPositiveButton("Yes", new Dialog.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int whichButton) {
-
-                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivity(intent);
-            }
-        });
-        dialogBuilder.setNegativeButton("No", new Dialog.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int whichButton) {
-                //showToast("You picked negative button");
-            }
-        });
-        return dialogBuilder.create();
     }
 
     private void onMyMapReady(GoogleMap googleMap) {
@@ -348,39 +251,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    /*    @OnClick({R.id.button, R.id.button2})
-        public void onViewClicked(View view) {
 
-
-            switch (view.getId()) {
-                case R.id.button:
-                    if (!running) {
-                        Intent i = new Intent(getApplicationContext(), MyService.class);
-                        startService(i);
-                        myMap.clear();
-                        dystans = 0.0;
-                        // Empty the array list
-                        points.clear();
-                        seconds = 0;
-                        stan = false;
-                    }
-                    running = true;
-                    break;
-                case R.id.button2:
-                    running = false;
-
-
-                    break;
-            }
-
-        }*/
     private void enable_buttons() {
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (!running) {
-                    Log.d("start","Start");
+                    Log.d("start", "Start");
+                    i = new Intent(MapsActivity.this, MyService.class);
                     startService(i);
                     timestamp = System.currentTimeMillis();
 
@@ -391,6 +270,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     seconds = 0;
                     stan = false;
                 }
+                destroy = false;
                 running = true;
             }
         });
@@ -399,7 +279,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 running = false;
-                Log.d("stop","stop");
+                Log.d("stop", "stop");
+                i = new Intent(MapsActivity.this, MyService.class);
                 stopService(i);
 
             }
@@ -453,17 +334,49 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (running) {
                     //++seconds;
                     timestamp2 = System.currentTimeMillis();
-                    seconds = (int)((timestamp2 - timestamp) / 1000);
+                    seconds = (int) ((timestamp2 - timestamp) / 1000);
 
                     //Log.d("seconds", String.valueOf(seconds));
                     Log.d("time", String.valueOf(time));
 
 
-                   // Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
+                    // Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
 
                     try {
                         //Log.d("Work!", "Work!");
+                        if (!destroy) {
+                            if (broadcastReceiver == null) {
+                                broadcastReceiver = new BroadcastReceiver() {
+                                    @Override
+                                    public void onReceive(Context context, Intent intent) {
+                                        try {
+                                            //Log.d("Lat", "" + intent.getExtras().get("Lat"));
+                                            //Log.d("Long", "" + intent.getExtras().get("Long"));
 
+                                            Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
+                                            Long = Double.parseDouble("" + intent.getExtras().get("Long"));
+                                            destroy = Boolean.getBoolean("" + intent.getExtras().get("destroy"));
+                                            //Log.d("Przerwa", "przerwa");
+                                            //Log.d("Lat", "" + Lat);
+                                            //Log.d("Lat", "" + Long);
+                                            //i.putExtra("Long",location.getLongitude());
+                                            //textView.append("\n" +intent.getExtras().get("coordinates"));
+                                            //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
+                                        } catch (NullPointerException e) {
+                                            //Log.e("NullPointerException ", String.valueOf(e));
+                                        }catch (NumberFormatException e) {
+                                            //Log.e("NullPointerException ", String.valueOf(e));
+                                        }
+                                    }
+                                };
+                            }
+                            registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
+                        }
+                        else
+                        {
+                            i = new Intent(MapsActivity.this, MyService.class);
+                            stopService(i);
+                        }
                         latLng = new LatLng(Lat, Long);
                         if (!stan & Lat != 0 & Long != 0) {
                             //if (!stan) {
@@ -490,10 +403,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
                                 Log.d("liczba", String.valueOf(liczba + "m"));
-//                                Log.d("v", String.valueOf(v));
-//                                Log.d("Lat", String.valueOf(Lat));
-//                                Log.d("v1", String.valueOf(v1));
-//                                Log.d("Long", String.valueOf(Long));
                             }
                             x = formatter.format(liczba);
                             if (!(v == 0.0 & v1 == 0.0)) {
@@ -543,55 +452,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 currentMarker.showInfoWindow();
 
                             }
-                        } else {
-                            //turnOnScreen();
-                            //Log.e("turnOnScreen","turnOnScreen");
-/*                            Log.d("v", String.valueOf(v));
-                            Log.d("Lat", String.valueOf(Lat));
-                            Log.d("v1", String.valueOf(v1));
-                            Log.d("Long", String.valueOf(Long));*/
-/*                            if(licznik == 0)
-                            {
-                                Log.d("service1", String.valueOf(isMyServiceRunning(MyService.class)));
-
-                                Intent i = new Intent(getApplicationContext(), MyService.class);
-                                stopService(i);
-                                licznik=2;
-
-                            }
-
-                            if(licznik ==2)
-                            {
-                                Log.d("service2", String.valueOf(isMyServiceRunning(MyService.class)));
-                                Intent i = new Intent(getApplicationContext(), MyService.class);
-                                startService(i);
-                                licznik=3;
-
-                            }
-                            if(licznik>2)
-                            {
-                                licznik++;
-                            }
-                            if(licznik==10)
-                            {
-                                licznik=0;
-                            }
-                            Log.d("service3", String.valueOf(isMyServiceRunning(MyService.class)));*/
-                            //.d("Not location!", "Not location!");
-                            //textView.setText("identical\nTotal distance = " + formatter.format(dystans) + "m");
-                            //askPermissionsAndShowMyLocation();
-/*                            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-                            final KeyguardManager.KeyguardLock kl = km.newKeyguardLock("MyKeyguardLock");
-                            kl.disableKeyguard();
-
-                            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                            PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
-                                    | PowerManager.ACQUIRE_CAUSES_WAKEUP
-                                    | PowerManager.ON_AFTER_RELEASE, "MyWakeLock");
-                            wakeLock.acquire();
-                            wakeLock.release();*/
                         }
-
                     } catch (NullPointerException e) {
                         textView.setText("Check GPS, click again and wait...");
                         //Log.e("MYTAG", "Check GPS, click again and wait...");
