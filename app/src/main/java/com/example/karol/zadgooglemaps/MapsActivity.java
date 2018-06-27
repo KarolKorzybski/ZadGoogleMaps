@@ -557,7 +557,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                             }
                         } else {
-                            turnOnScreen();
+                            //turnOnScreen();
                             //Log.e("turnOnScreen","turnOnScreen");
 /*                            Log.d("v", String.valueOf(v));
                             Log.d("Lat", String.valueOf(Lat));
@@ -611,7 +611,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
 
                 }
-                handler.postDelayed(this, 900);
+                handler.postDelayed(this, 90);
             }
         });
     }

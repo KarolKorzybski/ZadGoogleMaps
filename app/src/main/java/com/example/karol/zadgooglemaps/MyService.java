@@ -1,6 +1,10 @@
+
+
+
 package com.example.karol.zadgooglemaps;
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -12,29 +16,61 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.provider.SyncStateContract;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MyService extends Service {
-    private Toast toast;
-    private Timer timer;
-    private TimerTask timerTask;
-    private class MyTimerTask extends TimerTask {
-        @Override
-        public void run() {
-            Log.d("coordinates", "work");
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
+public class MyService extends Service implements
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
-
-        }
-    }
+    private static final String TAG = MyService.class.getSimpleName();
+    GoogleApiClient mLocationClient;
+    LocationRequest mLocationRequest = new LocationRequest();
     public LocationListener listener;
     public LocationManager locationManager;
+
+    public static final String ACTION_LOCATION_BROADCAST = MyService.class.getName() + "LocationBroadcast";
+    public static final String EXTRA_LATITUDE = "extra_latitude";
+    public static final String EXTRA_LONGITUDE = "extra_longitude";
+    boolean running = false;
+    Location mLastLocation;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+
+        mLocationClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setFastestInterval(1000);
+
+
+        int priority = LocationRequest.PRIORITY_HIGH_ACCURACY; //by default
+        //PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER, PRIORITY_NO_POWER are the other priority modes
+
+
+        mLocationRequest.setPriority(priority);
+        mLocationClient.connect();
+
+        //Make it stick to the notification panel so it is less prone to get cancelled by the Operating System.
+        return START_STICKY;
+    }
 
     @Nullable
     @Override
@@ -42,100 +78,113 @@ public class MyService extends Service {
         return null;
     }
 
+    /*
+     * LOCATION CALLBACKS
+     */
     @Override
-    public void onCreate() {
-        timer = new Timer();
-        toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
-        zzz
+    public void onConnected(Bundle dataBundle) {
+        running = true;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
 
-    }
+            Log.d(TAG, "== Error On onConnected() Permission not granted");
+            //Permission not granted by user so cancel the further execution.
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        clearTimerSchedule();
-        final Intent i = new Intent("location_update");
-        initTask();
-        final Handler handler = new Handler();
-        handler.post(new Runnable() {
+            return;
+        }
+
+
+        Intent intent = new Intent(this, MyService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        try {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
+        } catch (IllegalStateException e) {
+            Log.d("illegal", "illegal");
+        }
+
+        Log.d(TAG, "Connected to Google API");
+
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (running) {
-                    LocationListener listener = new LocationListener() {
-                        @Override
-                        public void onLocationChanged(Location location) {
-
-                            i.putExtra("Lat", location.getLatitude());
-                            i.putExtra("Long", location.getLongitude());
-                            i.putExtra("Long", location.getLongitude());
-
-                            i.putExtra("coordinates", location.getLongitude() + " " + location.getLatitude());
-                            Log.d("coordinates", location.getLongitude() + " " + location.getLatitude());
-                            Log.d("coordinates", location.getLongitude() + " " + location.getLatitude());
-                            Log.d("Lat", "" + location.getLatitude());
-                            Log.d("Long", "" + location.getLongitude());
-
-                            sendBroadcast(i);
-                        }
-
-                        @Override
-                        public void onStatusChanged(String s, int i, Bundle bundle) {
-
-                        }
-
-                        @Override
-                        public void onProviderEnabled(String s) {
-
-                        }
-
-                        @Override
-                        public void onProviderDisabled(String s) {
-                            Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(i);
-
-                        }
-                    };
-
-                    LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-
-                    //noinspection MissingPermission
-                    if (ActivityCompat.checkSelfPermission(MyService.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MyService.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                       // return super.onStartCommand(intent, flags, startId);
-                    }
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 900, 0, listener);
-                    timer.scheduleAtFixedRate(timerTask, 4 * 1000, 4 * 1000);
-
-                }handler.postDelayed(this,1000);
             }
-        });
-        return super.onStartCommand(intent, flags, startId);
+        }, 900);
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
+        onLocationChanged(mLastLocation);
     }
 
-    private void clearTimerSchedule() {
-        if(timerTask != null) {
-            timerTask.cancel();
-            timer.purge();
-        }
-    }
-
-    private void initTask() {
-        timerTask = new MyTimerTask();
-    }
+    /*
+     * Called by Location Services if the connection to the
+     * location client drops because of an error.
+     */
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if(locationManager != null){
-            //noinspection MissingPermission
-            locationManager.removeUpdates(listener);
-            Log.e("destroy","!null");
-        }
-        Log.e("destroy","null");
+    public void onConnectionSuspended(int i) {
+        Log.d(TAG, "Connection suspended");
     }
+
+
+    //to get the location change
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.d(TAG, "Location changed");
+        try {
+            Log.d("lat", String.valueOf(location.getLatitude()));
+            Log.d("long", String.valueOf(location.getLongitude()));
+        }catch (NullPointerException e)
+        {
+            Log.d("NullPointerException", String.valueOf(e));
+        }
+        if (location != null) {
+            Log.d(TAG, "== location != null");
+
+            //Send result to activities
+            sendMessageToUI(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
+            Log.d("lat", String.valueOf(location.getLatitude()));
+            Log.d("long", String.valueOf(location.getLongitude()));
+        }
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+
+    private void sendMessageToUI(String lat, String lng) {
+
+        Log.d(TAG, "Sending info...");
+
+        Intent intent = new Intent(ACTION_LOCATION_BROADCAST);
+        intent.putExtra(EXTRA_LATITUDE, lat);
+        intent.putExtra(EXTRA_LONGITUDE, lng);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+    }
+
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.d(TAG, "Failed to connect to Google API");
+
+    }
+
 }
