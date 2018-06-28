@@ -113,9 +113,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LocationManager locationManager;
 
     /**
-     * @param savedInstanceState
      * Metoda określa, który układ należy użyć, sprawdza czy mamy załączoną łączność sieciową,
      * wyświetla progresdialog, tworzy fragment mapy oraz uruchamia runTimer
+     *
+     * @param savedInstanceState
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,44 +125,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ButterKnife.bind(this);
         myProgress = new ProgressDialog(this);
         myProgress.setTitle("Map Loading ...");
-        myProgress.setMessage("Please wait...");
+        myProgress.setMessage("Please turn on network transmission and wait...");
         myProgress.setCancelable(true);
         // Display Progress Bar.
         myProgress.show();
-        TextView distance_text;
-        distance_text = (TextView) findViewById(R.id.textView);
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
-                connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
 
-            connected = true;
-            myProgress.dismiss();
-        } else
-            connected = false;
-        if (!connected) {
-            connected = true;
-            distance_text.setText("Network disable - please turn on");
-
-        }
-        if (connected) {
-            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            //you will call this activity later
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        //you will call this activity later
 
 
-            SupportMapFragment mapFragment
-                    = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        SupportMapFragment mapFragment
+                = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
 
-            // Set callback listener, on Google Map ready.
-            mapFragment.getMapAsync(new OnMapReadyCallback() {
+        // Set callback listener, on Google Map ready.
+        mapFragment.getMapAsync(new OnMapReadyCallback() {
 
-                @Override
-                public void onMapReady(GoogleMap googleMap) {
-                    onMyMapReady(googleMap);
-                }
-            });
-            if (!runtime_permissions())
-                enable_buttons();
-        }
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                onMyMapReady(googleMap);
+            }
+        });
+        enable_buttons();
 
         runTimer();
     }
@@ -192,7 +176,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     *Metoda odpowiedzialna za pytanie o uprawnienia do lokalizacji
+     * Metoda odpowiedzialna za pytanie o uprawnienia do lokalizacji
      */
     private void askPermissions() {
 
@@ -223,30 +207,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private boolean runtime_permissions() {
-        if (Build.VERSION.SDK_INT >= 23 && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
-
-            return true;
-        }
-        return false;
-    }
-
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 100) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                enable_buttons();
-            } else {
-                runtime_permissions();
-            }
-        }
-    }
-
+    /**
+     * Metoda odpowiedzialna za obsługę przycisków.
+     * Przycisk start - sprawdza czy GPS włączony, uruchamia zewnętrzny serwis,
+     * uruchamia pomiar lokalizacji z zewnętrznego serwisu i stoper
+     * <p>
+     * Przycisk Stop zatrzymuję pomiar lokalizacji i stoper
+     */
     private void enable_buttons() {
 
         start.setOnClickListener(new View.OnClickListener() {
@@ -287,6 +254,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    /**
+     * Metoda pobiera kolejne parametry lokalizacji i zwraca odległość między nimi
+     *
+     * @param lat1
+     * @param lng1
+     * @param lat2
+     * @param lng2
+     * @return
+     */
     public static double distFrom(double lat1, double lng1, double lat2, double lng2) {
         double earthRadius = 6371000; //meters
         double dLat = Math.toRadians(lat2 - lat1);
@@ -300,15 +276,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+    /**
+     * Metoda odpowiedzialna za uruchomienie odpowiedniego dialogu
+     *
+     * @param id
+     * @return
+     */
 
     protected Dialog onCreateDialog(int id) {
         switch (id) {
@@ -321,6 +294,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    /**
+     * Dialog przekierowujący do ustawień GPS w razie wyłączonej lokalizacji
+     *
+     * @return
+     */
     private Dialog createAlertDialogGps() {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setTitle("GPS disable");
@@ -343,7 +321,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return dialogBuilder.create();
     }
 
+    /**
+     * Timer, który co sekundę wyświetla nową lokalizację, inicjalizuję oraz uaktualnie czas stopera,
+     * zaznacza na mapię marker z pierwszą i ostatnią lokalizacją, rysuję trasę przebytej drogi,
+     * wyświetla całą przebytą odległość
+     */
     public void runTimer() {
+        /**
+         * konfiguracja TextView
+         */
         final NumberFormat formatter = new DecimalFormat("#0.00");
         final TextView timeView = (TextView) findViewById(R.id.textView2);
         final TextView textView = (TextView) findViewById(R.id.textView);
@@ -351,6 +337,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         handler.post(new Runnable() {
             @Override
             public void run() {
+                /**
+                 * Konfiuracja stopera
+                 */
                 hours = seconds / 3600;
                 minutes = (seconds % 3600) / 60;
                 secs = seconds % 60;
@@ -358,10 +347,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.d("running", String.valueOf(running));
                 timeView.setText(time);
                 if (running) {
+                    /**
+                     * Pomiar obecnego czasu
+                     */
                     timestamp2 = System.currentTimeMillis();
-                    Log.d("service", String.valueOf(isMyServiceRunning(MyService.class)));
                     try {
                         //Log.d("Work!", "Work!");
+                        /**
+                         * Odbiór lokalizacji z serwisu
+                         */
                         if (broadcastReceiver == null) {
                             broadcastReceiver = new BroadcastReceiver() {
                                 @Override
@@ -380,6 +374,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
 
                         latLng = new LatLng(Lat, Long);
+                        /**
+                         * Ustawianie startowego punktu lokalizacji,
+                         * pomiar pierwszego punktu startowego stopera,
+                         * skierowanie pozycji mapy na pierwszym punkcie startowym,
+                         *
+                         */
                         if (!stan & Lat != 0 & Long != 0) {
                             timestamp = System.currentTimeMillis();
                             //if (!stan) {
@@ -401,16 +401,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             stan = true;
                         }
                         if (stan) {
+                            /**
+                             * Przypisanie czasu systemowego do zmiennej seconds
+                             */
                             seconds = (int) ((timestamp2 - timestamp) / 1000);
                         }
+                        /**
+                         *Sprawdzanie czy nowe wyniki pomiaru lokalizacji nie pokrywają się z ostatnimi pomiarami
+                         */
                         if (v != Lat & v1 != Long) {
-                            if (Lat != 0 | Long != 0) {
+                            /**
+                             * Jeśli pomiar jest różny od zera następuje wyliczenie odległości pokonanej między ostatnimi
+                             * dwoma pomiarami
+                             */
+                            if (Lat != 0 & Long != 0) {
                                 distance = distFrom(v, v1, Lat, Long);
                             }
-
-                            if (!(v == 0.0 & v1 == 0.0)) {
-                                textView.setText("Position start");
-                            }
+                            /**
+                             *Jeśli odległość jest większa od zera następuję przypisanie lokalizacji na mapę
+                             * zaznaczenie ostatniego markera i obliczenie całkowitej drogi
+                             *
+                             */
 
                             if (distance > 0) {
                                 if (!(v == 0 & v1 == 0)) {
@@ -458,11 +469,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
 
                 }
+                /**
+                 * Konfiguracja cyklicznej pracy timera co 1s
+                 */
                 handler.postDelayed(this, 1000);
             }
         });
     }
 
+    /**
+     * metoda wywoływana przy zamykaniu aplikacji, zamyka połączenie z serwisem
+     */
     protected void onDestroy() {
         Intent i = new Intent(this, MyService.class);
         stopService(i);
