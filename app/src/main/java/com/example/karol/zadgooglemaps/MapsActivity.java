@@ -354,7 +354,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     try {
                         //Log.d("Work!", "Work!");
                         /**
-                         * Odbiór lokalizacji z serwisu
+                         * Odbiór lokalizacji z serwisu i przypisanie jej do zmiennych Lat oraz Long
                          */
                         if (broadcastReceiver == null) {
                             broadcastReceiver = new BroadcastReceiver() {

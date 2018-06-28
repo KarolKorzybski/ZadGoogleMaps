@@ -19,21 +19,35 @@ import com.google.android.gms.location.LocationServices;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * Klasa MyService, korzystająca z GoogleApiClient pobiera dane z lokalizacji oraz wysyła je
+ * do MapsAcitivity
+ */
 public class MyService extends Service implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
+    /**
+     * Zmienne odpowiedzialne za obecną pozycję na mapie
+     */
     double lat1 = 0;
     double lng1 = 0;
+
+    /**
+     * Inicjalizacja elementów niezbędnych do konfiguracji lokalizacji
+     */
     GoogleApiClient mLocationClient;
     LocationRequest mLocationRequest = new LocationRequest();
     PendingIntent pendingIntent;
-    int priority;
-    public static final String EXTRA_LATITUDE = "extra_latitude";
-    public static final String EXTRA_LONGITUDE = "extra_longitude";
-    boolean stan = false;
     Location mLastLocation;
-    private Timer mTimer;
 
+    int priority;
+    boolean stan = false;
+
+    /**
+     * Inicjalizacja timera, konfiguracja lokalizacji, nadawanie priorytetu połączenia z lokalizacją,
+     *
+     */
+    private Timer mTimer;
     private TimerTask mTimerTask = new TimerTask() {
         public void run() {
             if (!stan) {
@@ -54,10 +68,15 @@ public class MyService extends Service implements
             }
         }
     };
+
+    /**
+     * Wywoływanie timera, konfiguracją cyklicznej pracy co 250ms
+     */
     public void onCreate() {
         super.onCreate();
         this.mTimer = new Timer();
-        this.mTimer.schedule(mTimerTask, 0, 250);  }
+        this.mTimer.schedule(mTimerTask, 0, 250);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -72,6 +91,10 @@ public class MyService extends Service implements
         return null;
     }
     @Override
+    /**
+     *Konfiguracja intencji pendingIntent,
+     *Odbieranie lokalizacji
+     */
     public void onConnected(Bundle dataBundle) {
 
          if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -98,23 +121,19 @@ public class MyService extends Service implements
 
 
     //to get the location change
+
+    /**
+     * Sprawdzanie lokalizacji i wywołanie metody odpowiedzialnej za wysyłanie lokalizacji do aktywności
+     * @param location
+     */
     @Override
     public void onLocationChanged(Location location) {
-        //Log.d(TAG, "Location changed");
-        try {
-            // Log.d("lat", String.valueOf(location.getLatitude()));
-            // Log.d("long", String.valueOf(location.getLongitude()));
 
-        } catch (NullPointerException e) {
-            // Log.d("NullPointerException", String.valueOf(e));
-        }
         if (location != null) {
-            // Log.d(TAG, "== location != null");
 
             //Send result to activities
             sendMessageToUI(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
-            // Log.d("lat", String.valueOf(location.getLatitude()));
-            // Log.d("long", String.valueOf(location.getLongitude()));
+
         }
 
     }
@@ -134,7 +153,11 @@ public class MyService extends Service implements
 
     }
 
-
+    /**
+     * Metoda odpowiedzialna za wysyłanie parametrów lokalizacji do aktywności
+     * @param lat
+     * @param lng
+     */
     private void sendMessageToUI(String lat, String lng) {
 
         // Log.d(TAG, "Sending info...");
@@ -160,6 +183,9 @@ public class MyService extends Service implements
 
     }
 
+    /**
+     * Metoda wywoływana w momencie usuwania serwisu
+     */
     public void onDestroy() {
         super.onDestroy();
         mLocationClient.disconnect();
