@@ -1,84 +1,63 @@
-
-
-
 package com.example.karol.zadgooglemaps;
 
 import android.Manifest;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.provider.Settings;
-import android.provider.SyncStateContract;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
-
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-
-import java.util.Timer;
-import java.util.TimerTask;
-
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MyService extends Service implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
     double lat1 = 0;
     double lng1 = 0;
-    private static final String TAG = MyService.class.getSimpleName();
     GoogleApiClient mLocationClient;
     LocationRequest mLocationRequest = new LocationRequest();
-    public LocationListener listener;
-    public LocationManager locationManager;
     PendingIntent pendingIntent;
     int priority;
-    public static final String ACTION_LOCATION_BROADCAST = MyService.class.getName() + "LocationBroadcast";
     public static final String EXTRA_LATITUDE = "extra_latitude";
     public static final String EXTRA_LONGITUDE = "extra_longitude";
     boolean stan = false;
     Location mLastLocation;
+    private Timer mTimer;
 
+    private TimerTask mTimerTask = new TimerTask() {
+        public void run() {
+            if (!stan) {
+                mLocationClient = new GoogleApiClient.Builder(MyService.this)
+                        .addConnectionCallbacks(MyService.this)
+                        .addOnConnectionFailedListener(MyService.this)
+                        .addApi(LocationServices.API)
+                        .build();
+                mLocationRequest.setInterval(1000);
+                mLocationRequest.setFastestInterval(1000);
+
+
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY; //by default
+                //PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER, PRIORITY_NO_POWER are the other priority modes
+
+                mLocationRequest.setPriority(priority);
+                mLocationClient.connect();
+            }
+        }
+    };
     public void onCreate() {
         super.onCreate();
-
-        final Handler handler = new Handler();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (!stan) {
-                    mLocationClient = new GoogleApiClient.Builder(MyService.this)
-                            .addConnectionCallbacks(MyService.this)
-                            .addOnConnectionFailedListener(MyService.this)
-                            .addApi(LocationServices.API)
-                            .build();
-                    mLocationRequest.setInterval(1000);
-                    mLocationRequest.setFastestInterval(1000);
-
-
-                    priority = LocationRequest.PRIORITY_HIGH_ACCURACY; //by default
-                    //PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER, PRIORITY_NO_POWER are the other priority modes
-
-
-                    mLocationRequest.setPriority(priority);
-                    mLocationClient.connect();
-                }
-                handler.postDelayed(this, 250);
-            }
-        });
-        //Make it stick to the notification panel so it is less prone to get cancelled by the Operating System.
-    }
+        this.mTimer = new Timer();
+        this.mTimer.schedule(mTimerTask, 0, 250);  }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -92,25 +71,10 @@ public class MyService extends Service implements
     public IBinder onBind(Intent intent) {
         return null;
     }
-
-    /*
-     * LOCATION CALLBACKS
-     */
     @Override
     public void onConnected(Bundle dataBundle) {
 
-        //Log.d("stan = ", String.valueOf(stan));
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-
-            // Log.d(TAG, "== Error On onConnected() Permission not granted");
-            //Permission not granted by user so cancel the further execution.
+         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             return;
         }
@@ -121,21 +85,12 @@ public class MyService extends Service implements
         try {
             LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
         } catch (IllegalStateException e) {
-            // Log.d("illegal", "illegal");
         }
-
-        //Log.d(TAG, "Connected to Google API");
-
-
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
         onLocationChanged(mLastLocation);
 
     }
 
-    /*
-     * Called by Location Services if the connection to the
-     * location client drops because of an error.
-     */
     @Override
     public void onConnectionSuspended(int i) {
         // Log.d(TAG, "Connection suspended");
@@ -148,10 +103,10 @@ public class MyService extends Service implements
         //Log.d(TAG, "Location changed");
         try {
             // Log.d("lat", String.valueOf(location.getLatitude()));
-            //  Log.d("long", String.valueOf(location.getLongitude()));
+            // Log.d("long", String.valueOf(location.getLongitude()));
 
         } catch (NullPointerException e) {
-            //  Log.d("NullPointerException", String.valueOf(e));
+            // Log.d("NullPointerException", String.valueOf(e));
         }
         if (location != null) {
             // Log.d(TAG, "== location != null");
@@ -159,7 +114,7 @@ public class MyService extends Service implements
             //Send result to activities
             sendMessageToUI(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
             // Log.d("lat", String.valueOf(location.getLatitude()));
-            //  Log.d("long", String.valueOf(location.getLongitude()));
+            // Log.d("long", String.valueOf(location.getLongitude()));
         }
 
     }
@@ -189,12 +144,9 @@ public class MyService extends Service implements
         if (lat1 != Double.parseDouble(lat) || lng1 != Double.parseDouble(lng)) {
             intent.putExtra("Lat", lat);
             intent.putExtra("Long", lng);
-            Log.d("lat", lat);
-            Log.d("long", lng);
+            //Log.d("lat", lat);
+            //Log.d("long", lng);
             sendBroadcast(intent);
-            intent.putExtra(EXTRA_LATITUDE, lat);
-            intent.putExtra(EXTRA_LONGITUDE, lng);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         }
         lat1 = Double.parseDouble(lat);
         lng1 = Double.parseDouble(lng);
@@ -210,15 +162,12 @@ public class MyService extends Service implements
 
     public void onDestroy() {
         super.onDestroy();
-        final Intent intent = new Intent("location_update");
-        intent.putExtra("destroy", "true");
-        sendBroadcast(intent);
+        mLocationClient.disconnect();
+        mTimerTask.cancel();
         pendingIntent = null;
         priority = 0;
         mLocationRequest = null;
-
         stan = true;
-        mLocationClient.disconnect();
         Log.e("destroy", "!null");
 
     }
