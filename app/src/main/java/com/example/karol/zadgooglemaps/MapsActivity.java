@@ -107,77 +107,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     boolean connected;
     public static final int REQUEST_ID_ACCESS_COURSE_FINE_LOCATION = 100;
     LocationManager locationManager;
-
-    public void onResume() {
-        super.onResume();
-        if (broadcastReceiver == null) {
-            broadcastReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    try {
-                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                        //Log.d("Long", "" + intent.getExtras().get("Long"));
-                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
-                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                        //Log.d("Przerwa", "przerwa");
-                        //Log.d("Lat", "" + Lat);
-                        //Log.d("Lat", "" + Long);
-                        //i.putExtra("Long",location.getLongitude());
-                        //textView.append("\n" +intent.getExtras().get("coordinates"));
-                        //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
-                    } catch (NullPointerException e) {
-                        //Log.e("NullPointerException ", String.valueOf(e));
-                    } catch (NumberFormatException e) {
-                        //Log.e("NullPointerException ", String.valueOf(e));
-                    }
-                }
-            };
-        }
-        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
-    }
-
-    public void onStop() {
-        super.onStop();
-
-
-        if (broadcastReceiver == null) {
-            broadcastReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    try {
-
-                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
-                        //Log.d("Long", "" + intent.getExtras().get("Long"));
-                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
-                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
-                        //Log.d("Przerwa", "przerwa");
-                        //Log.d("Lat", "" + Lat);
-                        //Log.d("Lat", "" + Long);
-                        //i.putExtra("Long",location.getLongitude());
-                        //textView.append("\n" +intent.getExtras().get("coordinates"));
-                        //Log.d("coordinates", "" + intent.getExtras().get("coordinates"));
-                    } catch (NullPointerException e) {
-                        //Log.e("NullPointerException ", String.valueOf(e));
-                    }
-                }
-            };
-        }
-        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
-
-    }
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         ButterKnife.bind(this);
+        myProgress = new ProgressDialog(this);
+        myProgress.setTitle("Map Loading ...");
+        myProgress.setMessage("Please wait...");
+        myProgress.setCancelable(true);
+        // Display Progress Bar.
+        myProgress.show();
         odleglosc = (TextView) findViewById(R.id.textView);
         ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         if(connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
                 connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
 
             connected = true;
+            myProgress.dismiss();
         }
         else
             connected = false;
@@ -192,12 +139,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             //you will call this activity later
 
-            myProgress = new ProgressDialog(this);
-            myProgress.setTitle("Map Loading ...");
-            myProgress.setMessage("Please wait...");
-            myProgress.setCancelable(true);
-            // Display Progress Bar.
-            myProgress.show();
+
 
 
             SupportMapFragment mapFragment
@@ -344,7 +286,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     Intent i = new Intent(getApplicationContext(), MyService.class);
                     startService(i);
-                    timestamp = System.currentTimeMillis();
+
 
                     myMap.clear();
                     dystans = 0.0;
@@ -485,7 +427,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (running) {
                     //++seconds;
                     timestamp2 = System.currentTimeMillis();
-                    seconds = (int) ((timestamp2 - timestamp) / 1000);
+
 
                     //Log.d("seconds", String.valueOf(seconds));
                     //Log.d("time", String.valueOf(time));
@@ -495,9 +437,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     try {
                         //Log.d("Work!", "Work!");
+                        if (broadcastReceiver == null) {
+                            broadcastReceiver = new BroadcastReceiver() {
+                                @Override
+                                public void onReceive(Context context, Intent intent) {
+                                    try {
+                                        //Log.d("Lat", "" + intent.getExtras().get("Lat"));
+                                        //Log.d("Long", "" + intent.getExtras().get("Long"));
+                                        Lat = Double.parseDouble("" + intent.getExtras().get("Lat"));
+                                        Long = Double.parseDouble("" + intent.getExtras().get("Long"));
+                                        //Log.d("Przerwa", "przerwa");
+                                        //Log.d("Lat", "" + Lat);
+                                        //Log.d("Lat", "" + Long);
+                                        //i.putExtra("Long",location.getLongitude());
+                                        //textView.append("\n" +intent.getExtras().get("coordinates"));
+                                        //Log.d("coordinates", "" +intent.getExtras().get("coordinates"));
+                                    } catch (NullPointerException e) {
+                                        //Log.e("NullPointerException ", String.valueOf(e));
+                                    } catch (NumberFormatException e) {
+                                        //Log.e("NullPointerException ", String.valueOf(e));
+                                    }
+                                }
+                            };
+                        }
+                        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
 
                         latLng = new LatLng(Lat, Long);
                         if (!stan & Lat != 0 & Long != 0) {
+                            timestamp = System.currentTimeMillis();
                             //if (!stan) {
                             option = new MarkerOptions();
                             option.title("START");
@@ -515,6 +482,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             base_lat = Lat;
                             base_lng = Long;
                             stan = true;
+                        }
+                        if(stan )
+                        {
+                            seconds = (int) ((timestamp2 - timestamp) / 1000);
                         }
                         if (v != Lat & v1 != Long) {
                             if (Lat != 0 | Long != 0) {
