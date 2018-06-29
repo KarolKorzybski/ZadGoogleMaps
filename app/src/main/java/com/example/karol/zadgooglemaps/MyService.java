@@ -120,8 +120,6 @@ public class MyService extends Service implements
     }
 
 
-    //to get the location change
-
     /**
      * Sprawdzanie lokalizacji i wywołanie metody odpowiedzialnej za wysyłanie lokalizacji do aktywności
      * @param location
@@ -162,13 +160,10 @@ public class MyService extends Service implements
 
         // Log.d(TAG, "Sending info...");
 
-        //Intent intent = new Intent(ACTION_LOCATION_BROADCAST);
         final Intent intent = new Intent("location_update");
         if (lat1 != Double.parseDouble(lat) || lng1 != Double.parseDouble(lng)) {
             intent.putExtra("Lat", lat);
             intent.putExtra("Long", lng);
-            //Log.d("lat", lat);
-            //Log.d("long", lng);
             sendBroadcast(intent);
         }
         lat1 = Double.parseDouble(lat);

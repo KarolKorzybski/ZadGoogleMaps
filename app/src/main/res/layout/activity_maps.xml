@@ -48,7 +48,7 @@
         android:alpha="0.5"
         android:background="@drawable/border"
         android:gravity="center"
-        android:text="TextView"
+        android:text="Click START"
         android:textColor="@color/BLACK"
         android:textSize="20dp" />
 
@@ -62,7 +62,7 @@
         android:alpha="0.5"
         android:background="@drawable/border"
         android:gravity="center"
-        android:text="TextView"
+        android:text="00:00:00"
         android:textColor="@color/BLACK"
         android:textSize="20dp" />
 

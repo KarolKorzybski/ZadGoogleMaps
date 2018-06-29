@@ -1,7 +1,6 @@
 package com.example.karol.zadgooglemaps;
 
 import android.Manifest;
-import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -13,13 +12,10 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.LocationManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
@@ -47,7 +43,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
- * Klasa sprawdza połączenie połączenie GPS,
+ * Klasa sprawdza połączenie GPS,
  * odbieranie dane z serwisu o lokalizacji
  * oraz wyświetla marker i rysuje położenie na mapie
  *
@@ -86,7 +82,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     long timestamp, timestamp2;
 
 
-    boolean alarm = false, running, connected, stan = false;
+    boolean alarm = false, running, stan = false;
 
     /**
      * Inicjalizacja przycisków
@@ -127,17 +123,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         myProgress.setTitle("Map Loading ...");
         myProgress.setMessage("Please turn on network transmission and wait...");
         myProgress.setCancelable(true);
-        // Display Progress Bar.
         myProgress.show();
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        //you will call this activity later
 
 
         SupportMapFragment mapFragment
                 = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
 
-        // Set callback listener, on Google Map ready.
         mapFragment.getMapAsync(new OnMapReadyCallback() {
 
             @Override
@@ -150,11 +143,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         runTimer();
     }
 
+    /**
+     * Przypisanie fragmentu do mapy, Sprawdzenie uprawnień lokalizacji,
+     * zatrzymanie dialogu myProgress po załadowaniu mapy
+     * @param googleMap
+     */
     private void onMyMapReady(GoogleMap googleMap) {
         // Get Google Map from Fragment.
         myMap = googleMap;
 
-        // Sét OnMapLoadedCallback Listener.
         myMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
 
             @Override
@@ -189,10 +186,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             if (accessCoarsePermission != PackageManager.PERMISSION_GRANTED
                     || accessFinePermission != PackageManager.PERMISSION_GRANTED) {
-                // The Permissions to ask user.
                 String[] permissions = new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION};
-                // Show a dialog asking the user to allow the above permissions.
                 ActivityCompat.requestPermissions(this, permissions,
                         REQUEST_ID_ACCESS_COURSE_FINE_LOCATION);
 
@@ -209,7 +204,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     /**
      * Metoda odpowiedzialna za obsługę przycisków.
-     * Przycisk start - sprawdza czy GPS włączony, uruchamia zewnętrzny serwis,
+     * Przycisk start - sprawdza czy GPS jest włączony, uruchamia zewnętrzny serwis,
      * uruchamia pomiar lokalizacji z zewnętrznego serwisu i stoper
      * <p>
      * Przycisk Stop zatrzymuję pomiar lokalizacji i stoper
@@ -255,7 +250,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     * Metoda pobiera kolejne parametry lokalizacji i zwraca odległość między nimi
+     * Metoda pobiera kolejne parametry lokalizacji i zwraca odległość między nimi w metrach
      *
      * @param lat1
      * @param lng1
@@ -271,7 +266,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
                         Math.sin(dLng / 2) * Math.sin(dLng / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        float dist = (float) (earthRadius * c);
+        double dist = (float) (earthRadius * c);
         return dist;
 
     }
@@ -470,7 +465,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 }
                 /**
-                 * Konfiguracja cyklicznej pracy timera co 1s
+                 * Konfiguracja cyklicznej pracy timera co 1000ms
                  */
                 handler.postDelayed(this, 1000);
             }
