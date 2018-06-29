@@ -1,141 +1,196 @@
 package com.example.karol.zadgooglemaps;
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-import android.widget.Toast;
-
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MyService extends Service {
-    private Toast toast;
-    private Timer timer;
-    private TimerTask timerTask;
-    private class MyTimerTask extends TimerTask {
-        @Override
+/**
+ * Klasa MyService, korzystająca z GoogleApiClient pobiera dane z lokalizacji oraz wysyła je
+ * do MapsAcitivity
+ */
+public class MyService extends Service implements
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
+    /**
+     * Zmienne odpowiedzialne za obecną pozycję na mapie
+     */
+    double lat1 = 0;
+    double lng1 = 0;
+
+    /**
+     * Inicjalizacja elementów niezbędnych do konfiguracji lokalizacji
+     */
+    GoogleApiClient mLocationClient;
+    LocationRequest mLocationRequest = new LocationRequest();
+    PendingIntent pendingIntent;
+    Location mLastLocation;
+
+    int priority;
+    boolean stan = false;
+
+    /**
+     * Inicjalizacja timera, konfiguracja lokalizacji, nadawanie priorytetu połączenia z lokalizacją,
+     *
+     */
+    private Timer mTimer;
+    private TimerTask mTimerTask = new TimerTask() {
         public void run() {
-            Log.d("coordinates", "work");
+            if (!stan) {
+                mLocationClient = new GoogleApiClient.Builder(MyService.this)
+                        .addConnectionCallbacks(MyService.this)
+                        .addOnConnectionFailedListener(MyService.this)
+                        .addApi(LocationServices.API)
+                        .build();
+                mLocationRequest.setInterval(1000);
+                mLocationRequest.setFastestInterval(1000);
 
 
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY; //by default
+                //PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER, PRIORITY_NO_POWER are the other priority modes
 
+                mLocationRequest.setPriority(priority);
+                mLocationClient.connect();
+            }
         }
+    };
+
+    /**
+     * Wywoływanie timera, konfiguracją cyklicznej pracy co 250ms
+     */
+    public void onCreate() {
+        super.onCreate();
+        this.mTimer = new Timer();
+        this.mTimer.schedule(mTimerTask, 0, 250);
     }
-    public LocationListener listener;
-    public LocationManager locationManager;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+        return START_STICKY;
+
+    }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
-
     @Override
-    public void onCreate() {
-        timer = new Timer();
-        toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
-        zzz
+    /**
+     *Konfiguracja intencji pendingIntent,
+     *Odbieranie lokalizacji
+     */
+    public void onConnected(Bundle dataBundle) {
 
-    }
+         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        clearTimerSchedule();
-        final Intent i = new Intent("location_update");
-        initTask();
-        final Handler handler = new Handler();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (running) {
-                    LocationListener listener = new LocationListener() {
-                        @Override
-                        public void onLocationChanged(Location location) {
-
-                            i.putExtra("Lat", location.getLatitude());
-                            i.putExtra("Long", location.getLongitude());
-                            i.putExtra("Long", location.getLongitude());
-
-                            i.putExtra("coordinates", location.getLongitude() + " " + location.getLatitude());
-                            Log.d("coordinates", location.getLongitude() + " " + location.getLatitude());
-                            Log.d("coordinates", location.getLongitude() + " " + location.getLatitude());
-                            Log.d("Lat", "" + location.getLatitude());
-                            Log.d("Long", "" + location.getLongitude());
-
-                            sendBroadcast(i);
-                        }
-
-                        @Override
-                        public void onStatusChanged(String s, int i, Bundle bundle) {
-
-                        }
-
-                        @Override
-                        public void onProviderEnabled(String s) {
-
-                        }
-
-                        @Override
-                        public void onProviderDisabled(String s) {
-                            Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(i);
-
-                        }
-                    };
-
-                    LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-
-                    //noinspection MissingPermission
-                    if (ActivityCompat.checkSelfPermission(MyService.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MyService.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                       // return super.onStartCommand(intent, flags, startId);
-                    }
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 900, 0, listener);
-                    timer.scheduleAtFixedRate(timerTask, 4 * 1000, 4 * 1000);
-
-                }handler.postDelayed(this,1000);
-            }
-        });
-        return super.onStartCommand(intent, flags, startId);
-    }
-
-    private void clearTimerSchedule() {
-        if(timerTask != null) {
-            timerTask.cancel();
-            timer.purge();
+            return;
         }
+
+
+        Intent intent = new Intent(this, MyService.class);
+        pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        try {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mLocationClient, mLocationRequest, pendingIntent);
+        } catch (IllegalStateException e) {
+        }
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
+        onLocationChanged(mLastLocation);
+
     }
 
-    private void initTask() {
-        timerTask = new MyTimerTask();
-    }
     @Override
+    public void onConnectionSuspended(int i) {
+        // Log.d(TAG, "Connection suspended");
+    }
+
+
+    /**
+     * Sprawdzanie lokalizacji i wywołanie metody odpowiedzialnej za wysyłanie lokalizacji do aktywności
+     * @param location
+     */
+    @Override
+    public void onLocationChanged(Location location) {
+
+        if (location != null) {
+
+            //Send result to activities
+            sendMessageToUI(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
+
+        }
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    /**
+     * Metoda odpowiedzialna za wysyłanie parametrów lokalizacji do aktywności
+     * @param lat
+     * @param lng
+     */
+    private void sendMessageToUI(String lat, String lng) {
+
+        // Log.d(TAG, "Sending info...");
+
+        final Intent intent = new Intent("location_update");
+        if (lat1 != Double.parseDouble(lat) || lng1 != Double.parseDouble(lng)) {
+            intent.putExtra("Lat", lat);
+            intent.putExtra("Long", lng);
+            sendBroadcast(intent);
+        }
+        lat1 = Double.parseDouble(lat);
+        lng1 = Double.parseDouble(lng);
+
+    }
+
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        // Log.d(TAG, "Failed to connect to Google API");
+
+    }
+
+    /**
+     * Metoda wywoływana w momencie usuwania serwisu
+     */
     public void onDestroy() {
         super.onDestroy();
-        if(locationManager != null){
-            //noinspection MissingPermission
-            locationManager.removeUpdates(listener);
-            Log.e("destroy","!null");
-        }
-        Log.e("destroy","null");
+        mLocationClient.disconnect();
+        mTimerTask.cancel();
+        pendingIntent = null;
+        priority = 0;
+        mLocationRequest = null;
+        stan = true;
+        Log.e("destroy", "!null");
+
     }
 }
+
